@@ -1006,8 +1006,19 @@ function save(name, contents, type) {
   const link = document.createElement('a');
   link.href = url;
   link.download = name;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  link.hidden = true;
+  document.body.append(link);
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+}
+
+function saveJson(name, data) {
+  // Safari can preview application/json in the tab even when the link requests a download.
+  save(name, JSON.stringify(data, null, 2), 'application/octet-stream');
 }
 
 function csv() {
@@ -1025,10 +1036,10 @@ function csv() {
 $('bench-all').onclick = () => runBenchmark(true);
 $('bench').onclick = () => runBenchmark(false);
 $('stop').onclick = () => { stopRequested = true; };
-$('json').onclick = () => save('tif-v6.1-measurements.json', JSON.stringify(report(), null, 2), 'application/json');
+$('json').onclick = () => saveJson('tif-v6.1-measurements.json', report());
 $('csv').onclick = () => save('tif-v6.1-results.csv', '\ufeff' + csv(), 'text/csv;charset=utf-8');
-$('frames').onclick = () => save('tif-v6.1-frames.json',
-  JSON.stringify({encoding: 'base64/png', frames: Object.fromEntries(images)}), 'application/json');
+$('frames').onclick = () => saveJson('tif-v6.1-frames.json',
+  {encoding: 'base64/png', frames: Object.fromEntries(images)});
 $('clear').onclick = () => {
   raw.length = sustained.length = audits.length = 0;
   images.clear();
